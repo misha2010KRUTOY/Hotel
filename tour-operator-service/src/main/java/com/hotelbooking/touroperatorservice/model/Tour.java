@@ -2,7 +2,6 @@ package com.hotelbooking.touroperatorservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,8 +22,8 @@ public class Tour {
     private String tourName;
     private String description;
 
-    @OneToMany(mappedBy = "tour")  // Обратите внимание на 'mappedBy' для явного указания владельца связи
-    @JsonIgnore  // Игнорируем сериализацию списка roomAvailables
+    @OneToMany(mappedBy = "tour")
+    @JsonIgnore
     private Set<RoomAvailable> roomAvailables;
 
     private double price;

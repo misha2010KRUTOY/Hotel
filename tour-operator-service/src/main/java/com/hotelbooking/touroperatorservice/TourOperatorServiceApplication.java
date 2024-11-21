@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = "com.hotelbooking.touroperatorservice.repository")
 @EntityScan(basePackages = "com.hotelbooking.touroperatorservice.model")
+
 public class TourOperatorServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TourOperatorServiceApplication.class, args);

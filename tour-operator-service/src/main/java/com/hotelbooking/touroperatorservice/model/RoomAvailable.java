@@ -18,7 +18,7 @@ public class RoomAvailable {
     private boolean isAvailable;
 
     @ManyToOne
-    @JoinColumn(name = "tour_id") // внешний ключ для связи с Tour
-    @JsonIgnore  // Игнорируем сериализацию этого поля
+    @JoinColumn(name = "tour_id")
+    @JsonIgnore
     private Tour tour;
 }

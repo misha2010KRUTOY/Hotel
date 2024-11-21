@@ -1,48 +1,61 @@
 package com.hotelbooking.touroperatorservice.config;
 
-import com.hotelbooking.touroperatorservice.security.JwtRequestFilter;
-import com.hotelbooking.touroperatorservice.security.CustomUserDetailsService;
+import com.hotelbooking.touroperatorservice.service.AppUserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import javax.crypto.spec.SecretKeySpec;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtRequestFilter jwtRequestFilter;
-    private final CustomUserDetailsService customUserDetailsService;
-
-    public SecurityConfig(JwtRequestFilter jwtRequestFilter, CustomUserDetailsService customUserDetailsService) {
-        this.jwtRequestFilter = jwtRequestFilter;
-        this.customUserDetailsService = customUserDetailsService;
-    }
+    @Value("${security.jwt.secret-key}")
+    private String jwtSecretKey;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeRequests()
-                .requestMatchers("/auth/**").permitAll() // Разрешить доступ к авторизационным эндпоинтам
-                .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
-                .and()
-                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class); // Добавление фильтра для JWT
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+      return http
+              .csrf(csrf -> csrf.disable() )
+              .authorizeHttpRequests( auth -> auth
+                      .requestMatchers("/").permitAll()
+                      .requestMatchers("/account").permitAll()
+                      .requestMatchers("/account/login").permitAll()
+                      .requestMatchers("/account/register").permitAll()
+                      .anyRequest().authenticated()
+              )
+              .oauth2ResourceServer(oauth2 ->oauth2.jwt(Customizer.withDefaults()))
+              .sessionManagement(session -> session.sessionCreationPolicy(
+                      SessionCreationPolicy.STATELESS))
+              .build();
 
-        return http.build();
     }
-
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public JwtDecoder jwtDecoder() {
+        var secretKey = new SecretKeySpec(jwtSecretKey.getBytes(), "");
+        return NimbusJwtDecoder.withSecretKey(secretKey)
+                .macAlgorithm(MacAlgorithm.HS256).build();
     }
-
     @Bean
-    public UserDetailsService userDetailsService() {
-        return customUserDetailsService; // Использование вашего кастомного UserDetailsService
+    public AuthenticationManager authenticationManager(AppUserService appUserService) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(appUserService);
+        provider.setPasswordEncoder(new BCryptPasswordEncoder());
+
+        return new ProviderManager(provider);
     }
 }
+
